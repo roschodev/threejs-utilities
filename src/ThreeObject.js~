@@ -1,0 +1,195 @@
+import * as THREE from "three";
+import OrbitControlsExtended from "./OrbitControlsExtended.js";
+
+export class ThreeSceneObject {
+    constructor(){
+
+        this.OrbitControlModes = {
+            Enable: 1,
+            Disable: 2,
+            Destroy: 3
+        }
+        const {scene, camera, renderer} = this.init()
+        this.scene = scene
+        this.camera = camera
+        this.renderer = renderer
+
+        this.controls = new OrbitControlsExtended(this.camera, this.renderer.domElement);
+
+        this.controls.enabled = false
+
+        this.gridHelper = null
+        this.globalGridHelper = null
+        this.ambientLight = null
+
+        this.animate()
+
+    }
+
+
+    init(){
+        let scene, camera, renderer;
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 1000 );
+        camera.position.set( 2, 2, 4 );
+        camera.lookAt( scene.position);
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild(renderer.domElement );
+        return {scene, camera, renderer}
+    }
+
+    enableOrbitControls( mode = this.OrbitControlModes.Enable, enableIdle = true) {
+        switch (mode) {
+            case this.OrbitControlModes.Enable:
+                this.controls.enabled = true;
+                return this.controls;
+
+            case this.OrbitControlModes.Disable:
+                this.controls.enabled = false;
+                return this.controls;
+
+            case this.OrbitControlModes.Destroy:
+                if (this.controls) {
+                    this.controls.dispose();
+                    this.controls = null;
+                }
+                return;
+        }
+    }
+
+    enableGridHelper(Enable = true, size = 100, divisions = 100) {
+        if (Enable) {
+            if (!this.gridHelper) {
+                // Create a new GridHelper with the given size and divisions
+                this.gridHelper = new THREE.GridHelper(size, divisions);
+                this.scene.add(this.gridHelper);  // Add the new GridHelper to the scene
+                return this.gridHelper;
+            } else {
+                // If gridHelper already exists, just update its size and divisions
+                this.gridHelper.geometry.dispose();  // Dispose of the old geometry
+                this.gridHelper.geometry = new THREE.PlaneGeometry(size, size, divisions, divisions);  // Create new geometry with updated size and divisions
+                this.gridHelper.geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));  // Rotate to align grid
+                return this.gridHelper;
+            }
+        } else {
+            if (this.gridHelper) {
+                this.scene.remove(this.gridHelper);  // Remove the existing GridHelper from the scene
+                this.gridHelper = null;  // Clear the reference
+            }
+            return null;
+        }
+    }
+
+    enableGlobalAxesHelper(Enable = true) {
+        if (Enable) {
+            if (!this.globalGridHelper) {
+                this.globalGridHelper = new THREE.AxesHelper(1000);
+                this.scene.add(this.globalGridHelper);
+            }
+        } else {
+            if (this.globalGridHelper) {
+                this.scene.remove(this.globalGridHelper);
+            }
+        }
+    }
+    enableAmbientLight(Enable = true, color = 0xffffff, intensity = 0.5) {
+        if(Enable){
+            if(!this.ambientLight){
+                this.ambientLight = new THREE.AmbientLight(color, intensity);
+                this.scene.add(this.ambientLight);
+            }
+            else{
+                console.log("AmbientLight already exists on this object");
+            }
+
+        } else {
+            if (this.ambientLight) {
+                this.scene.remove(this.ambientLight);
+            }
+        }
+    }
+
+    enableWindowResizing(Enable = true) {
+        if (Enable) {
+            window.addEventListener('resize', this.onWindowResize.bind(this), false);
+        } else {
+            window.removeEventListener('resize', this.onWindowResize.bind(this), false);
+        }
+    }
+
+    onWindowResize() {
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+
+    animate() {
+        requestAnimationFrame(this.animate.bind(this));
+
+
+        this.renderer.render(this.scene, this.camera);
+
+        this.controls.deltatime = this.controls.clock.getDelta();
+        this.controls.updateIdleTime(this.controls.deltatime)
+        
+
+
+
+    }
+}
+
+
+export class ThreeBasicMeshObject{
+     constructor(geometry, material) {
+         this.mesh = this.initMesh(geometry, material)
+         this.material = material
+         this.geometry = geometry
+         this.transformSpace = {
+             Local: 1,
+             Global: 2
+         }
+         this.localAxesHelper = null
+         this.globalAxesHelper = null
+     }
+
+     initMesh(geometry, material) {
+         return new THREE.Mesh(geometry, material);
+     }
+
+    enableAxesHelper(Enable = true, object, TransformSpace = this.transformSpace.Local) {
+        const existingAxesHelper = object.children.find(child => child instanceof THREE.AxesHelper);
+
+        if (Enable) {
+            if (!existingAxesHelper) {
+                const axisHelper = new THREE.AxesHelper(1000);
+                switch (TransformSpace) {
+                    case this.transformSpace.Local:
+                        object.add(axisHelper);  // Add to the object itself
+                        break;
+                    case this.transformSpace.Global:
+                        if (object.parent) {
+                            object.parent.add(axisHelper);  // Add to the object's parent
+                        } else {
+                            console.warn("Object has no parent for Global space");
+                        }
+                        break;
+                }
+            } else {
+                console.log("AxesHelper already exists on this object");
+            }
+        } else {
+            if (existingAxesHelper) {
+                object.remove(existingAxesHelper);  // Remove the existing AxesHelper
+            }
+        }
+    }
+
+}
+
+export class ThreeLightObject{
+    constructor(light){
+    this.light = light
+    }
+}

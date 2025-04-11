@@ -1,0 +1,133 @@
+import * as THREE from "three";
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { AxesHelper} from "three";
+
+
+export class ThreeUtilities {
+    constructor(){
+
+        this.OrbitControlModes = {
+            Enable: 1,
+            Disable: 2,
+            Destroy: 3
+        }
+        const {scene, camera, renderer} = this.init()
+        this.scene = scene
+        this.camera = camera
+        this.renderer = renderer
+
+        this.controls = new OrbitControls(camera, renderer.domElement);
+
+        this.gridHelper = null
+        this.globalGridHelper = null
+        this.debugCube = null
+    }
+
+
+    init(){
+        let scene, camera, renderer;
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera( 40, window.innerWidth / window.innerHeight, 1, 1000 );
+        camera.position.set( 2, 2, 4 );
+        camera.lookAt( scene.position);
+        renderer = new THREE.WebGLRenderer();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild(renderer.domElement );
+        return {scene, camera, renderer}
+    }
+
+    enableOrbitControls(camera, renderer, mode = this.OrbitControlModes.Enable) {
+
+        switch (mode) {
+            case this.OrbitControlModes.Enable:
+                this.controls.enabled = true;
+                return this.controls;
+
+            case this.OrbitControlModes.Disable:
+                if (this.controls) {
+                    this.controls.enabled = false;
+                }
+                return this.controls;
+
+            case this.OrbitControlModes.Destroy:
+                if (this.controls) {
+                    this.controls.dispose();
+                    this.controls = null;
+                }
+                return;
+        }
+    }
+
+    enableGridHelper(Enable = true, size = 100, divisions = 100) {
+        if (Enable) {
+            if (!this.gridHelper) {
+                // Create a new GridHelper with the given size and divisions
+                this.gridHelper = new THREE.GridHelper(size, divisions);
+                this.scene.add(this.gridHelper);  // Add the new GridHelper to the scene
+                return this.gridHelper;
+            } else {
+                // If gridHelper already exists, just update its size and divisions
+                this.gridHelper.geometry.dispose();  // Dispose of the old geometry
+                this.gridHelper.geometry = new THREE.PlaneGeometry(size, size, divisions, divisions);  // Create new geometry with updated size and divisions
+                this.gridHelper.geometry.applyMatrix4(new THREE.Matrix4().makeRotationX(Math.PI / 2));  // Rotate to align grid
+                return this.gridHelper;
+            }
+        } else {
+            if (this.gridHelper) {
+                this.scene.remove(this.gridHelper);  // Remove the existing GridHelper from the scene
+                this.gridHelper = null;  // Clear the reference
+            }
+            return null;
+        }
+    }
+
+
+    enableDebugCube(Enable = true ) {
+        if (Enable) {
+            if (!this.debugCube) {
+                const debugGeometry = new THREE.BoxGeometry(1, 1, 1);
+                const debugMaterial = new THREE.MeshNormalMaterial();
+                this.debugCube = new THREE.Mesh(debugGeometry, debugMaterial);
+                this.scene.add(this.debugCube)
+            }
+        } else {
+            if (this.debugCube) {
+                this.scene.remove(this.debugCube)
+            }
+        }
+    }
+
+
+    addLocalAxesHelper(Enable = true, object) {
+        const existingAxesHelper = object.children.find(child => child instanceof THREE.AxesHelper);
+
+        if (Enable) {
+            if (!existingAxesHelper) {
+                const axisHelper = new THREE.AxesHelper(1000);
+                object.add(axisHelper);
+            } else {
+                console.log("AxesHelper already exists on this object");
+            }
+        } else {
+            if (existingAxesHelper) {
+                object.remove(existingAxesHelper);
+            }
+        }
+    }
+
+    enableGlobalAxesHelper(Enable = true) {
+        if (Enable) {
+            if (!this.globalGridHelper) {
+                this.globalGridHelper = new THREE.AxesHelper(1000);
+                this.scene.add(this.globalGridHelper);
+            }
+        } else {
+            if (this.globalGridHelper) {
+                this.scene.remove(this.globalGridHelper);
+            }
+        }
+}
+
+
+
+
