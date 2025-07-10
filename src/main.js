@@ -1,229 +1,187 @@
-import * as THREE from 'three'
-import { OrbitControls } from "three/addons";
-import {AmbientLight, AxesHelper} from "three";
-import * as THREE_UTILS from './ThreeObject.js';
-import {ThreeSceneObject, ThreeBasicMeshObject} from "./ThreeObject.js";
+import * as THREE from "three";
+
+import { ThreeSceneObject } from "./Three/ThreeSceneObject.js";
+import { CircularSplineObject, FlowExtended, ThreeBasicSplineObject, TrainTrack} from "./ThreeSplineObjects.js";
+
+import {ThreeDebuggerObject} from "./Three/ThreeDebuggerObject.js";
 
 
-const clock = new THREE.Clock();
+//DEBUG VARIABLES================================================================================================================
+const mesh = new THREE.Mesh(
+    new THREE.SphereGeometry(1),
+    new THREE.MeshBasicMaterial({color: 0x00ff00})
+)
 
-const threeObject = new ThreeSceneObject()
-threeObject.enableGridHelper()
-threeObject.enableGlobalAxesHelper()
-threeObject.enableAmbientLight(true, 0xffffff, 5)
-threeObject.enableWindowResizing(true)
-threeObject.enableOrbitControls()
+// Initialize the scene========================================================================================================
+const threeObject = new ThreeSceneObject();
+threeObject.enableAmbientLight(true, 0xffffff, 5);
+threeObject.enableWindowResizing(true);
+threeObject.enableOrbitControls("Enabled", true);
+threeObject.renderer.domElement.style.position = 'absolute';
+threeObject.renderer.domElement.style.top = '0';
+threeObject.renderer.domElement.style.left = '0';
+threeObject.renderer.domElement.style.width = '100%';
+threeObject.renderer.domElement.style.height = '100%';
+threeObject.renderer.domElement.style.zIndex = '0';
+threeObject.renderer.domElement.style.backgroundColor = '#ffffff';
+threeObject.renderer.setClearColor(0xffffff);
 
-const cube = new ThreeBasicMeshObject(
-    new THREE.BoxGeometry(1, 1, 1),
-    new THREE.MeshStandardMaterial({ color: "fx000000" })
-);
 
-threeObject.scene.add(cube.mesh);
+// Initialize CircularSpline===================================================================================================
+const circularSplineObject = new CircularSplineObject(threeObject.scene, 35, 50);
+circularSplineObject.enablePointMarkers(true, mesh)
 
-// function animate() {
-//     requestAnimationFrame( animate );
-//     threeObject.renderer.render( threeObject.scene, threeObject.camera );
+
+// Add GUI===================================================================================================
+const userInterface = new ThreeDebuggerObject(threeObject)
+
+
+
+
+
+
+//_________________________________________________________________________________________
+
+// //Initializing Train____________________________________________________________________
+// const loader = new ThreeMeshFileLoader();
+// let cart_flatbed, cart_boxcar, cart_passenger, locomotive;
+//
+// function loadGLB(path) {
+//     return new Promise((resolve, reject) => {
+//         loader.loadGLTF(path, (mesh) => {
+//             if (mesh) {
+//                 resolve(mesh); // Resolve the promise with the mesh
+//             } else {
+//                 reject(`Failed to load ${path}`);
+//             }
+//         });
+//     });
 // }
 //
-// animate();
+// Promise.all([
+//     loadGLB("models/cart_flatbed.glb"),
+//     loadGLB("models/cart_boxcar.glb"),
+//     loadGLB("models/cart_passenger.glb"),
+//     loadGLB("models/locomotive.glb")
+// ])
+//     .then(([flatbed, boxcar, passenger, loco]) => {
+//         // Once all the files are loaded, assign the meshes to variables
+//         cart_flatbed = flatbed;
+//         cart_boxcar = boxcar;
+//         cart_passenger = passenger;
+//         locomotive = loco;
+//
+//         // Now that everything is loaded, add them to the carts array
+//         const carts = [
+//             cart_boxcar,
+//             cart_passenger,
+//             cart_flatbed,
+//             cart_boxcar,
+//             locomotive,
+//         ];
+//
+//         // Add each cart to the train and scene
+//         carts.forEach(cart => {
+//             train.addCart({ mesh: cart }); // Make sure to wrap it in an object with the mesh
+//             threeObject.scene.add(cart);   // Add the mesh to the scene
+//         });
+//
+//         // Start the train animation
+//         train.animate();
+//     })
+//     .catch(error => {
+//         console.error("Error loading models:", error);
+//     });
+//_________________________________________________________________________________________
 
-// window.addEventListener('resize', onWindowResize, false);
-//
-// function onWindowResize() {
-//     threeObject.camera.aspect = window.innerWidth / window.innerHeight;
-//     threeObject.camera.updateProjectionMatrix();
-//
-//     threeObject.renderer.setSize(window.innerWidth, window.innerHeight);
-// }
+//const selectionHandler = new ThreeSelectionHandler(threeObject)
 
+//_________________________________________________________________________________________
 
-// import { TransformControls } from 'three/addons/controls/TransformControls.js';
-// import Stats from 'three/addons/libs/stats.module.js';
-// import { Flow } from 'three/addons/modifiers/CurveModifierGPU.js';
-// import { FontLoader } from 'three/addons/loaders/FontLoader.js';
-// import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
-//
-// const ACTION_SELECT = 1, ACTION_NONE = 0;
-// const curveHandles = [];
-// const mouse = new THREE.Vector2();
-//
-// let stats;
-// let scene,
-//     camera,
-//     renderer,
-//     rayCaster,
-//     control,
-//     flow,
-//     action = ACTION_NONE;
-//
-// init();
-//
-// function init() {
-//
-//     scene = new THREE.Scene();
-//
-//     camera = new THREE.PerspectiveCamera(
-//         40,
-//         window.innerWidth / window.innerHeight,
-//         1,
-//         1000
-//     );
-//     camera.position.set( 2, 2, 4 );
-//     camera.lookAt( scene.position );
-//
-//     const initialPoints = [
-//         { x: 1, y: 0, z: - 1 },
-//         { x: 1, y: 0, z: 1 },
-//         { x: - 1, y: 0, z: 1 },
-//         { x: - 1, y: 0, z: - 1 },
-//     ];
-//
-//     const boxGeometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
-//     const boxMaterial = new THREE.MeshBasicNodeMaterial();
-//
-//     for ( const handlePos of initialPoints ) {
-//
-//         const handle = new THREE.Mesh( boxGeometry, boxMaterial );
-//         handle.position.copy( handlePos );
-//         curveHandles.push( handle );
-//         scene.add( handle );
-//
-//     }
-//
-//     const curve = new THREE.CatmullRomCurve3(
-//         curveHandles.map( ( handle ) => handle.position )
-//     );
-//     curve.curveType = 'centripetal';
-//     curve.closed = true;
-//
-//     const points = curve.getPoints( 50 );
-//     const line = new THREE.Line(
-//         new THREE.BufferGeometry().setFromPoints( points ),
-//         new THREE.LineBasicMaterial( { color: 0x00ff00 } )
-//     );
-//
-//     scene.add( line );
-//
-//     //
-//
-//     const light = new THREE.DirectionalLight( 0xffaa33, 3 );
-//     light.position.set( - 10, 10, 10 );
-//     scene.add( light );
-//
-//     const light2 = new THREE.AmbientLight( 0x003973, 3 );
-//     scene.add( light2 );
-//
-//     //
-//
-//     const loader = new FontLoader();
-//     loader.load( 'fonts/helvetiker_regular.typeface.json', function ( font ) {
-//
-//         const geometry = new TextGeometry( 'Hello three.js!', {
-//             font: font,
-//             size: 0.2,
-//             depth: 0.05,
-//             curveSegments: 12,
-//             bevelEnabled: true,
-//             bevelThickness: 0.02,
-//             bevelSize: 0.01,
-//             bevelOffset: 0,
-//             bevelSegments: 5,
-//         } );
-//
-//         geometry.rotateX( Math.PI );
-//
-//         const material = new THREE.MeshStandardNodeMaterial( {
-//             color: 0x99ffff
-//         } );
-//
-//         const objectToCurve = new THREE.Mesh( geometry, material );
-//
-//         flow = new Flow( objectToCurve );
-//         flow.updateCurve( 0, curve );
-//         scene.add( flow.object3D );
-//
-//     } );
-//
-//     //
-//
-//     renderer = new THREE.WebGPURenderer( { antialias: true } );
-//     renderer.setPixelRatio( window.devicePixelRatio );
-//     renderer.setSize( window.innerWidth, window.innerHeight );
-//     renderer.setAnimationLoop( animate );
-//     document.body.appendChild( renderer.domElement );
-//
-//     renderer.domElement.addEventListener( 'pointerdown', onPointerDown );
-//
-//     rayCaster = new THREE.Raycaster();
-//     control = new TransformControls( camera, renderer.domElement );
-//     control.addEventListener( 'dragging-changed', function ( event ) {
-//
-//         if ( ! event.value ) {
-//
-//             const points = curve.getPoints( 50 );
-//             line.geometry.setFromPoints( points );
-//             flow.updateCurve( 0, curve );
-//
+// let intersects = []
+// let hitObject = null
+
+// threeObject.renderer.domElement.addEventListener('pointerdown', (event) => {
+//     const rect = threeObject.renderer.domElement.getBoundingClientRect();
+//     const x = event.clientX - rect.left;
+//     const y = event.clientY - rect.top;
+//     console.log(x, y);
+//     intersects = UTIL.getObjectsUnderMouse(threeObject, x, y)
+//     if(intersects){
+//         if (intersects.length > 0) {
+//             hitObject = intersects[0];
+//             console.log("found something")
+//             console.log(intersects[0]);
 //         }
-//
-//     } );
-//
-//     stats = new Stats();
-//     document.body.appendChild( stats.dom );
-//
-//     window.addEventListener( 'resize', onWindowResize );
-//
-// }
-//
-// function onWindowResize() {
-//
-//     camera.aspect = window.innerWidth / window.innerHeight;
-//     camera.updateProjectionMatrix();
-//
-//     renderer.setSize( window.innerWidth, window.innerHeight );
-//
-// }
-//
-// function onPointerDown( event ) {
-//
-//     action = ACTION_SELECT;
-//     mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-//     mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
-//
-// }
-//
-// function animate() {
-//
-//     if ( action === ACTION_SELECT ) {
-//
-//         rayCaster.setFromCamera( mouse, camera );
-//         action = ACTION_NONE;
-//         const intersects = rayCaster.intersectObjects( curveHandles, false );
-//         if ( intersects.length ) {
-//
-//             const target = intersects[ 0 ].object;
-//             control.attach( target );
-//             scene.add( control.getHelper() );
-//
+//         else {
+//             console.log("nothing hit")
 //         }
-//
 //     }
+// });
+
+// const fpsCounter = new Stats();
+
 //
-//     if ( flow ) {
+// // const train = new FlowExtended(spline, 0.25);
+// const cube = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+// const mat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
 //
-//         flow.moveAlongCurve( 0.001 );
+// const tubeGroup = new THREE.Group();
+// const spacing = 0.1;
+// const len = spline.curve.getLength();
+// const numSegments = Math.ceil(len / spacing);
 //
-//     }
+// for (let i = 0; i <= numSegments; i++) {
+//     const t = i / numSegments;
+//     const position = spline.curve.getPointAt(t);
+//     const tangent = spline.curve.getTangentAt(t).normalize();
 //
-//     render();
+//     const mesh = new THREE.Mesh(cube, mat);
+//     mesh.position.copy(position);
 //
+//     // Orient cube along the tangent
+//     const axis = new THREE.Vector3(0, 1, 0); // Default up direction
+//     const quaternion = new THREE.Quaternion().setFromUnitVectors(axis, tangent);
+//     mesh.quaternion.copy(quaternion);
+//
+//     tubeGroup.add(mesh);
 // }
+
+// //CREATE THE MESH
+// const geometry = new THREE.BoxGeometry(1,1,1);
+// const material = new THREE.MeshStandardMaterial({color: 0xffffff});
+// const cube = new ThreeBasicMeshObject(geometry, material, threeObject);
+// threeObject.scene.add(cube.mesh);
+
+
+//Initializing TransformHandler____________________________________________________________________
+// let controller = null;
+// //CREATE THE TRANSFORM CONTROLLER
+// function createTransformHandle(sceneObject = ThreeSceneObject) {
+//     controller = new TransformControls(threeObject.camera, threeObject.renderer.domElement);
+//     controller.attach(cube.mesh)
 //
-// function render() {
+//     const gizmo = controller.getHelper()
+//     threeObject.scene.add(gizmo)
 //
-//     renderer.render( scene, camera );
+//     controller.addEventListener('dragging-changed', function (event) {
+//         threeObject.controls.enabled = !event.value;
+//     });
+// }
+// createTransformHandle(threeObject)
+//_________________________________________________________________________________________
+
+// // Add a button to change TransformControls mode
+// gui.add({
+//     switchToScale: () => controller.setMode('scale'),
+//     switchToRotate: () => controller.setMode('rotate'),
+//     switchToTranslate: () => controller.setMode('translate')
+// }, 'switchToScale').name('Scale Mode');
 //
-//     stats.update();
+// gui.add({
+//     switchToRotate: () => controller.setMode('rotate')
+// }, 'switchToRotate').name('Rotate Mode');
 //
-//}
+// gui.add({
+//     switchToTranslate: () => controller.setMode('translate')
+// }, 'switchToTranslate').name('Translate Mode');

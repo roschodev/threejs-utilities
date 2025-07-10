@@ -2,19 +2,34 @@ import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import * as THREE from "three";
 
 export default class OrbitControlsExtended extends OrbitControls {
-    constructor(camera, domElement) {
+    constructor(camera, domElement, enableIdleRotation = true) {
         super(camera, domElement);
         this.clock = new THREE.Clock();
         this.idleTime = 0;
-        this.idleThreshold = 1; // Time in seconds after which the idle mechanic is triggered
         this.isRotating = false;
-        this.rotationSpeed = 0.01;
-        this.enablePan = false; // Add a flag to enable or disable panning
-        // Disable panning if 'enablePan' is false
-        this.enablePan = false
         this.deltatime = 0
+        // this.screenSpacePanning = false;
+        // this.zoomToCursor = true;
+        // this.enableDamping = true;
+        // this.dampingFactor = 0.01;
+        // this.rotateSpeed = 0.35;
+
+        //Accessable Variables
+        this.enableIdleRotation = enableIdleRotation;
+        this.speed = 0.05;
+        this.amplitude = 8
+        this.threshold = 1;
+
         // Start listening for input events
         this.addInputListeners();
+    }
+
+    setIdleRotationEnabled(enabled) {
+        this.enableIdleRotation = enabled;
+
+        if (!enabled && this.isRotating) {
+            this.stopRotation();
+        }
     }
 
     addInputListeners() {
@@ -22,6 +37,7 @@ export default class OrbitControlsExtended extends OrbitControls {
         window.addEventListener("keydown", this.resetIdleTime.bind(this), false);
         window.addEventListener("mousedown", this.resetIdleTime.bind(this), false);
         window.addEventListener("touchstart", this.resetIdleTime.bind(this), false);
+        window.addEventListener("wheel", this.resetIdleTime.bind(this), false);
     }
 
     resetIdleTime() {
@@ -43,28 +59,30 @@ export default class OrbitControlsExtended extends OrbitControls {
         }
     }
 
-
     stopRotation() {
         this.isRotating = false;
     }
 
     updateIdleTime(deltaTime) {
+        if (!this.enableIdleRotation) return; // Respect the toggle
+
         this.idleTime += deltaTime;
 
-        if (this.idleTime >= this.idleThreshold && !this.isRotating) {
+        if (this.idleTime >= this.threshold && !this.isRotating) {
             this.startRotation();
         }
 
         if (this.isRotating) {
-            this.rotateCameraAroundCenter(deltaTime); // Pass deltaTime for smoother and more consistent rotation
+            this.rotateCameraAroundCenter(deltaTime);
         }
     }
+
 
     rotateCameraAroundCenter(deltaTime) {
         this._rotationTime += deltaTime;
 
-        const frequency = this.rotationSpeed; // How fast it swings left/right
-        const amplitude = Math.PI / 8;        // Max swing angle (you can make this a variable too)
+        const frequency = this.speed; // How fast it swings left/right
+        const amplitude = Math.PI / this.amplitude;        // Max swing angle (you can make this a variable too)
 
         const offsetAngle = Math.sin(this._rotationTime * frequency) * amplitude;
         const angle = this._baseAngle + offsetAngle;
@@ -75,10 +93,6 @@ export default class OrbitControlsExtended extends OrbitControls {
         this.object.position.set(x, this.object.position.y, z);
         this.object.lookAt(0, 0, 0);
     }
-
-
-
-
 
     update() {
         // Call the base update method of OrbitControls
